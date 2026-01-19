@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4536784535135812669}
   - component: {fileID: 4640216905106190906}
   - component: {fileID: 4950959616009031631}
-  m_Layer: 6
+  m_Layer: 9
   m_Name: Colony
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -78,8 +78,8 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: -1617209239
+  m_SortingLayer: 1
   m_SortingOrder: 0
   m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
   m_Color: {r: 0.06732824, g: 0.17103706, b: 0.8396226, a: 1}
@@ -143,3 +143,4 @@ MonoBehaviour:
   initialAntCount: 100
   spawnPerFrame: 10
   antPrefab: {fileID: 223746858611979853, guid: 89f6122c7dce6f249bfee36db246f633, type: 3}
+  foodCollected: 0

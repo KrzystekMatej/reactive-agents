@@ -15,7 +15,6 @@ GameObject:
   - component: {fileID: 9207513239461418830}
   - component: {fileID: 2504762182479134194}
   - component: {fileID: 2912552961198477555}
-  - component: {fileID: 8585265417801441157}
   m_Layer: 3
   m_Name: Ant
   m_TagString: Untagged
@@ -85,14 +84,14 @@ Rigidbody2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 223746858611979853}
-  m_BodyType: 1
+  m_BodyType: 0
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
   m_Mass: 1
   m_LinearDamping: 0
-  m_AngularDamping: 0.05
-  m_GravityScale: 1
+  m_AngularDamping: 0
+  m_GravityScale: 0
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -129,8 +128,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Movement
   <Mass>k__BackingField: 1
-  <MaxSpeed>k__BackingField: 20
-  <MaxForce>k__BackingField: 5
+  <MaxSpeed>k__BackingField: 40
+  <MaxForce>k__BackingField: 100
   <MaxTurnRate>k__BackingField: 360
 --- !u!114 &2504762182479134194
 MonoBehaviour:
@@ -156,21 +155,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7b1504aa35744e4699d70f40363a276, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AntPheromoneDeposit
-  state: {fileID: 2504762182479134194}
-  rateMultiplier: 1
---- !u!114 &8585265417801441157
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 223746858611979853}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: beda29e2a6172a142b5798f4b5a750cb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WrapAround
-  area: {fileID: 0}
+  markerAdd:
+    target: 0.25
+    value: 0
+  spacingWorld: 0.25
+  markerIntensity: 8000
+  intensityDecayCoef: 0.05
 --- !u!1 &2009983363776644304
 GameObject:
   m_ObjectHideFlags: 0
@@ -252,7 +242,6 @@ GameObject:
   - component: {fileID: 6005378522848909401}
   - component: {fileID: 7277206263724945884}
   - component: {fileID: 1086182408286871434}
-  - component: {fileID: 3688868746276732432}
   m_Layer: 3
   m_Name: AI
   m_TagString: Untagged
@@ -300,6 +289,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ObstacleAvoidanceLayer
   priority: 2
+  weight: 1
+  lookAhead: 5
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 1024
 --- !u!114 &1086182408286871434
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -313,28 +307,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PheromoneFollowLayer
   priority: 1
-  sensorDistance: 1
-  sensorAngleDeg: 30
   weight: 1
-  activationThreshold: 0.02
-  persistenceSeconds: 0.2
---- !u!114 &3688868746276732432
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5494089210583829139}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ce7602ac25d1fa24dbccf0511de21436, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WanderLayer
-  radius: 5
-  jitter: 40
-  distance: 9
-  weight: 0.4
-  priority: 0
+  sampleCount: 32
+  maxSampleDistance: 10
+  sampleAngleRange: 1.5707964
+  directionUpdate:
+    target: 0.25
+    value: 0
+  libertyCoefRange: {x: 0.001, y: 0.01}
+  directionNoiseRange: 0.06283186
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 1024
+  foodMask:
+    serializedVersion: 2
+    m_Bits: 64
+  colonyMask:
+    serializedVersion: 2
+    m_Bits: 512
 --- !u!1 &8663936942048049492
 GameObject:
   m_ObjectHideFlags: 0
@@ -411,8 +401,8 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: -897589337
+  m_SortingLayer: 3
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: 78bd8cf1cb51950409040aa955d7c0e5, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}

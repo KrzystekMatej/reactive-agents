@@ -2,22 +2,30 @@ using UnityEngine;
 
 public sealed class PheromoneFollowLayer : MonoBehaviour, SteeringLayer, AgentComponent
 {
-    [SerializeField] private int priority;
-
-    [SerializeField] private float sensorDistance = 1.0f;
-    [SerializeField] private float sensorAngleDeg = 30.0f;
+    [SerializeField] private int priority = 1;
     [SerializeField] private float weight = 1.0f;
 
-    [SerializeField] private float activationThreshold = 0.02f;
-    [SerializeField] private float persistenceSeconds = 0.2f;
+    [SerializeField] private int sampleCount = 32;
+    [SerializeField] private float maxSampleDistance = 10.0f;
+    [SerializeField] private float sampleAngleRange = Mathf.PI * 0.5f;
+
+    [SerializeField] private Cooldown directionUpdate = new Cooldown(0.25f);
+
+    [SerializeField] private Vector2 libertyCoefRange = new Vector2(0.001f, 0.01f);
+    [SerializeField] private float directionNoiseRange = Mathf.PI * 0.02f;
+
+    [SerializeField] private LayerMask obstacleMask;
+    [SerializeField] private LayerMask foodMask;
+    [SerializeField] private LayerMask colonyMask;
+
+    private float libertyCoef;
+    private Vector2 currentDirection;
 
     private PheromoneField field;
 
     private AntStateManager state;
     private Rigidbody2D rigidBody;
     private Movement movement;
-
-    private float activeUntil;
 
     public int Priority => priority;
 
@@ -26,66 +34,78 @@ public sealed class PheromoneFollowLayer : MonoBehaviour, SteeringLayer, AgentCo
         rigidBody = agent.Get<Rigidbody2D>();
         movement = agent.Get<Movement>();
         state = agent.Get<AntStateManager>();
-        field = FindAnyObjectByType<PheromoneField>();
+
+        field = Object.FindAnyObjectByType<PheromoneField>();
+
+        libertyCoef = Random.Range(libertyCoefRange.x, libertyCoefRange.y);
+        directionUpdate.SetRandomOffset();
+    }
+
+    private void Start()
+    {
+        currentDirection = movement.GetCurrentHeadingDirection();
     }
 
     public SteeringResult GetSteering(float dt)
     {
-        if (field == null || state == null || rigidBody == null || movement == null) return SteeringResult.Inactive;
+        if (directionUpdate.UpdateAutoReset(dt))
+        {
+            currentDirection = SampleDirection();
 
-        PheromoneField.Channel followChannel =
-            state.CurrentState == AntState.Searching ? PheromoneField.Channel.ToFood : PheromoneField.Channel.ToHome;
+            float noiseAngle = Random.Range(-directionNoiseRange, directionNoiseRange);
+            currentDirection = MathHelpers.Rotate(currentDirection, noiseAngle);
+        }
 
-        Transform t = rigidBody.transform;
-
-        Vector2 forward = t.right;
-        float a = sensorAngleDeg * Mathf.Deg2Rad;
-
-        Vector2 pF = rigidBody.position + forward * sensorDistance;
-        Vector2 pL = rigidBody.position + Rotate(forward, +a) * sensorDistance;
-        Vector2 pR = rigidBody.position + Rotate(forward, -a) * sensorDistance;
-
-        float f = field.SampleWorld(followChannel, pF);
-        float l = field.SampleWorld(followChannel, pL);
-        float r = field.SampleWorld(followChannel, pR);
-
-        float best = f;
-        Vector2 bestDirection = forward;
-
-        if (l > best) { best = l; bestDirection = (pL - rigidBody.position).normalized; }
-        if (r > best) { best = r; bestDirection = (pR - rigidBody.position).normalized; }
-
-        if (best < activationThreshold) return new SteeringResult(false, Vector2.zero);
-
-        activeUntil = Time.time + persistenceSeconds;
-
-        Vector2 desiredVel = bestDirection * movement.MaxSpeed;
-        return SteeringResult.Active((desiredVel - rigidBody.linearVelocity) * weight);
+        Vector2 desiredVelocity = currentDirection * movement.MaxSpeed;
+        return SteeringResult.Active((desiredVelocity - rigidBody.linearVelocity) * weight);
     }
 
-    private static Vector2 Rotate(Vector2 v, float radians)
+    private Vector2 SampleDirection()
     {
-        float c = Mathf.Cos(radians);
-        float s = Mathf.Sin(radians);
-        return new Vector2(v.x * c - v.y * s, v.x * s + v.y * c);
+        float maxIntensity = 0f;
+        Vector2 bestDirection = currentDirection;
+
+        float headingAngle = movement.GetCurrentHeadingAngle();
+
+        for (int i = 0; i < sampleCount; i++)
+        {
+            float delta = Random.Range(-sampleAngleRange * 0.5f, sampleAngleRange * 0.5f);
+            float angle = headingAngle + delta;
+
+            Vector2 direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+            float distance = Random.Range(0f, maxSampleDistance);
+
+            if (Physics2D.Raycast(rigidBody.position, direction, distance, obstacleMask)) continue;
+
+            Vector2 target = rigidBody.position + direction * distance;
+
+            if (IsHardGoalHit(target)) return direction;
+
+            float intensity = field.SampleWorld(state.GetSampleChannel(), target);
+            if (intensity > maxIntensity)
+            {
+                maxIntensity = intensity;
+                bestDirection = direction;
+            }
+
+            if (Random.value < libertyCoef) break;
+        }
+
+        return bestDirection;
     }
 
-    private void OnDrawGizmosSelected()
+    private bool IsHardGoalHit(Vector2 samplePoint)
     {
-        Gizmos.color = Color.cyan;
-        Vector2 forward = transform.right;
-        float a = sensorAngleDeg * Mathf.Deg2Rad;
+        if (state.CurrentState == AntState.Searching)
+        {
+            return Physics2D.OverlapCircle(samplePoint, 0.05f, foodMask) != null;
+        }
 
-        Vector2 pF = (Vector2)transform.position + forward * sensorDistance;
-        Vector2 pL = (Vector2)transform.position + Rotate(forward, +a) * sensorDistance;
-        Vector2 pR = (Vector2)transform.position + Rotate(forward, -a) * sensorDistance;
+        if (state.CurrentState == AntState.Returning)
+        {
+            return Physics2D.OverlapCircle(samplePoint, 0.05f, colonyMask) != null;
+        }
 
-        Gizmos.DrawLine(transform.position, pF);
-        Gizmos.DrawLine(transform.position, pL);
-        Gizmos.DrawLine(transform.position, pR);
-
-        Gizmos.DrawSphere(pF, 0.05f);
-        Gizmos.DrawSphere(pL, 0.05f);
-        Gizmos.DrawSphere(pR, 0.05f);
+        return false;
     }
 }

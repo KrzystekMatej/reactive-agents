@@ -1,33 +1,50 @@
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
-public sealed class AntPheromoneDeposit : MonoBehaviour
+public sealed class AntPheromoneDeposit : MonoBehaviour, AgentComponent
 {
-    [SerializeField] private AntStateManager state;
-    [SerializeField] private float rateMultiplier = 1.0f;
+    [SerializeField] private Cooldown markerAdd = new Cooldown(0.25f);
+    [SerializeField] private float spacingWorld = 0.25f;
 
-    private PheromoneField field;
+    [SerializeField] private float markerIntensity = 8000.0f;
+    [SerializeField] private float intensityDecayCoef = 0.05f;
+
+
     private Rigidbody2D rigidBody;
+    private AntStateManager state;
+    private PheromoneField field;
 
-    private void Awake()
+    private Vector2 lastDepositPosition;
+
+    public void Initialize(AgentContext agent)
     {
-        rigidBody = GetComponent<Rigidbody2D>();
-        if (state == null) state = GetComponent<AntStateManager>();
-        field = FindAnyObjectByType<PheromoneField>();
+        rigidBody = agent.GetComponent<Rigidbody2D>();
+        state = agent.GetComponent<AntStateManager>();
+
+        if (field == null)
+        {
+            field = Object.FindAnyObjectByType<PheromoneField>();
+        }
+
+        markerAdd.SetRandomOffset();
+        lastDepositPosition = rigidBody.position;
     }
 
     private void FixedUpdate()
     {
-        if (field == null || state == null) return;
-
         float dt = Time.fixedDeltaTime;
 
-        if (rigidBody.linearVelocity.sqrMagnitude < 0.0001f) return;
+        if (!markerAdd.UpdateAutoReset(dt)) return;
 
-        var channel = state.CurrentState == AntState.Searching
-            ? PheromoneField.Channel.ToHome
-            : PheromoneField.Channel.ToFood;
+        Vector2 position = rigidBody.position;
 
-        field.DepositWorld(channel, rigidBody.position, field.DepositRate * rateMultiplier * dt);
+        float spacingSqr = spacingWorld * spacingWorld;
+        if ((position - lastDepositPosition).sqrMagnitude < spacingSqr) return;
+
+        float intensity = markerIntensity * Mathf.Exp(-intensityDecayCoef * state.InternalClock);
+        if (intensity <= 0.001f) return;
+
+        field.DepositWorld(state.GetDepositChannel(), position, intensity);
+        lastDepositPosition = position;
     }
 }

@@ -12,11 +12,11 @@ TagManager:
   - AgentTrigger
   - Water
   - UI
-  - Element
+  - Food
   - AgentCollision
   - Grid
-  - 
-  - 
+  - Colony
+  - Obstacle
   - 
   - 
   - 
@@ -41,6 +41,15 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Colony
+    uniqueID: 2677758057
+    locked: 0
+  - name: Food
+    uniqueID: 2246298599
+    locked: 0
+  - name: Agent
+    uniqueID: 3397377959
     locked: 0
   m_RenderingLayers:
   - Default
